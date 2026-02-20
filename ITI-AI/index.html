@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIRIO - Assistente ITI Olografico</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    :root {
+      --bg-dark: #0a0e14;
+      --bg-card: #111820;
+      --accent-blue: #00d4ff;
+      --accent-gold: #ffd700;
+      --accent-cyan: #00fff7;
+      --accent-orange: #ff9500;
+      --accent-green: #00ff88;
+      --accent-pink: #ff6b9d;
+      --text-primary: #e8f4f8;
+      --text-muted: #6b8a99;
+      --glow-blue: rgba(0, 212, 255, 0.5);
+      --glow-gold: rgba(255, 215, 0, 0.5);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Exo 2', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .font-orbitron {
+      font-family: 'Orbitron', monospace;
+    }
+
+    /* Holographic Scanlines */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 212, 255, 0.015) 2px,
+        rgba(0, 212, 255, 0.015) 4px
+      );
+      animation: scanMove 8s linear infinite;
+    }
+
+    @keyframes scanMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100px; }
+    }
+
+    /* Grid Background */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes gridPulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Floating Orbs Background */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.3;
+      animation: orbFloat 20s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--accent-blue);
+      top: -100px;
+      right: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent-gold);
+      bottom: -50px;
+      left: -50px;
+      animation-delay: -5s;
+    }
+
+    .orb-3 {
+      width: 250px;
+      height: 250px;
+      background: var(--accent-pink);
+      top: 50%;
+      left: 30%;
+      animation-delay: -10s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -30px) scale(1.1); }
+      50% { transform: translate(-20px, 20px) scale(0.9); }
+      75% { transform: translate(-30px, -20px) scale(1.05); }
+    }
+
+    /* Logo Styles */
+    .logo-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .logo-img:hover {
+      transform: scale(1.1) rotate(5deg);
+    }
+
+    .logo-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 16px;
+      border: 2px solid transparent;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-gold), var(--accent-pink), var(--accent-green)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: logoRingRotate 4s linear infinite;
+    }
+
+    @keyframes logoRingRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Title Styles */
+    .main-title {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+    }
+
+    .title-gradient {
+      background: linear-gradient(
+        135deg,
+        var(--accent-blue) 0%,
+        var(--accent-cyan) 25%,
+        var(--accent-gold) 50%,
+        var(--accent-orange) 75%,
+        var(--accent-blue) 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: titleShine 4s linear infinite;
+    }
+
+    @keyframes titleShine {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .title-highlight {
+      display: inline-block;
+      padding: 4px 16px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 149, 0, 0.1));
+      border: 1px solid var(--accent-gold);
+      border-radius: 8px;
+      color: var(--accent-gold);
+      -webkit-text-fill-color: var(--accent-gold);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+    }
+
+    /* Hologram Container */
+    .hologram-container {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center bottom, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+      border: 1px solid rgba(0, 212, 255, 0.15);
+    }
+
+    .hologram-platform {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 20px;
+      background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+      border-radius: 50%;
+      filter: blur(15px);
+      animation: platformPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes platformPulse {
+      0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.9; transform: translateX(-50%) scale(1.15); }
+    }
+
+    /* Chat Interface */
+    .chat-container {
+      background: linear-gradient(135deg, rgba(17, 24, 32, 0.95), rgba(10, 14, 20, 0.98));
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+    }
+
+    .message-bubble {
+      max-width: 80%;
+      padding: 14px 20px;
+      border-radius: 18px;
+      animation: messageIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .message-sirio {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.12), rgba(0, 255, 247, 0.08));
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-user {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 149, 0, 0.08));
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      border-bottom-right-radius: 4px;
+      margin-left: auto;
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), #0099cc);
+      color: var(--bg-dark);
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+
+    .btn-primary:hover::before {
+      transform: translateX(100%);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px var(--glow-blue);
+    }
+
+    .btn-primary:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent-gold);
+      border: 1px solid var(--accent-gold);
+      padding: 10px 24px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 215, 0, 0.15);
+      box-shadow: 0 6px 25px var(--glow-gold);
+      transform: translateY(-2px);
+    }
+
+    /* Quiz Cards */
+    .quiz-card {
+      background: linear-gradient(135deg, rgba(17, 24, 32, 0.9), rgba(10, 14, 20, 0.95));
+      border: 1px solid rgba(0, 212, 255, 0.15);
+      border-radius: 16px;
+      padding: 22px;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quiz-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-gold), var(--accent-pink));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .quiz-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 212, 255, 0.1), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .quiz-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .quiz-card:hover::after {
+      opacity: 1;
+    }
+
+    .quiz-card:hover {
+      border-color: rgba(0, 212, 255, 0.4);
+      transform: translateY(-6px);
+      box-shadow: 0 15px 50px rgba(0, 212, 255, 0.15);
+    }
+
+    /* Status Indicator */
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 247, 0.6); }
+      50% { box-shadow: 0 0 0 12px rgba(0, 255, 247, 0); }
+    }
+
+    /* Subject Tags */
+    .subject-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+
+    .subject-tag:hover {
+      transform: scale(1.08) translateY(-2px);
+    }
+
+    /* Input Field */
+    .chat-input {
+      background: rgba(10, 14, 20, 0.8);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 14px;
+      padding: 16px 22px;
+      color: var(--text-primary);
+      width: 100%;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Typing Animation */
+    .typing-indicator {
+      display: flex;
+      gap: 5px;
+      padding: 14px 20px;
+    }
+
+    .typing-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      animation: typingBounce 1.4s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+      30% { transform: translateY(-10px); opacity: 1; }
+    }
+
+    /* Quick Actions */
+    .quick-action {
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 25px;
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      color: var(--accent-cyan);
+    }
+
+    .quick-action:hover {
+      background: rgba(0, 212, 255, 0.18);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 212, 255, 0.2);
+    }
+
+    /* Voice Button */
+    .voice-btn {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-blue), #0099cc);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .voice-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 35px var(--glow-blue);
+    }
+
+    .voice-btn.listening {
+      animation: listeningPulse 1s ease-in-out infinite;
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+    }
+
+    @keyframes listeningPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.6); }
+      50% { box-shadow: 0 0 0 25px rgba(255, 215, 0, 0); }
+    }
+
+    /* Stagger Animation */
+    .stagger-in {
+      opacity: 0;
+      transform: translateY(30px);
+      animation: staggerReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes staggerReveal {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Hero Badge */
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent-gold);
+      margin-bottom: 16px;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-gold);
+      border-radius: 50%;
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Section Title */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 28px;
+      background: linear-gradient(180deg, var(--accent-blue), var(--accent-gold));
+      border-radius: 2px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      background: rgba(10, 14, 20, 0.92);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .hologram-container {
+        height: 280px;
+      }
+
+      .main-title {
+        font-size: 1.75rem;
+      }
+
+      .logo-img {
+        width: 44px;
+        height: 44px;
+      }
+
+      .orb {
+        opacity: 0.15;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-blue);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="scanlines"></div>
+  <div class="grid-bg"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="min-h-screen relative z-10">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl" style="background: rgba(10, 14, 20, 0.85);">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="logo-container">
+          <div class="relative">
+            <div class="logo-ring"></div>
+            <img 
+              src="https://z-cdn-media.chatglm.cn/files/c1f6a5df-093c-4e98-a659-9e412f1905a0.png?auth_key=1871609879-ca323a157b75481a82e71b06f96fe67f-0-4693a736adc7633b54062cdebd1a55fe" 
+              alt="ISISS MATESE Logo" 
+              class="logo-img"
+            />
+          </div>
+          <div>
+            <h1 class="font-orbitron text-lg font-bold tracking-wider" style="color: var(--accent-blue);">SIRIO</h1>
+            <p class="text-xs" style="color: var(--text-muted);">ISISS MATESE</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full" style="background: rgba(0, 255, 247, 0.08);">
+            <div class="status-dot"></div>
+            <span class="text-sm font-medium" style="color: var(--accent-cyan);">Online</span>
+          </div>
+          <button id="tourBtn" class="btn-secondary text-sm hidden md:block">Tour Virtuale</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-28 pb-10 px-4">
+      <div class="max-w-6xl mx-auto">
+        
+        <!-- Hero Section -->
+        <section class="stagger-in mb-10 text-center" style="animation-delay: 0.1s;">
+          <div class="hero-badge">
+            <span>Indirizzo Informatica e Telecomunicazioni</span>
+          </div>
+          <h2 class="main-title font-orbitron mb-4">
+            <span class="title-gradient">Scopri il Futuro</span>
+            <br>
+            <span class="title-highlight">all'ITI</span>
+          </h2>
+          <p class="subtitle max-w-xl mx-auto">
+            La tua guida olografica per esplorare il mondo della tecnologia
+          </p>
+        </section>
+
+        <!-- Hologram Avatar -->
+        <section class="stagger-in mb-10" style="animation-delay: 0.2s;">
+          <div class="hologram-container">
+            <canvas id="avatar-canvas"></canvas>
+            <div class="hologram-platform"></div>
+            <div id="avatar-label" class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center">
+              <span class="font-orbitron text-sm tracking-widest" style="color: var(--accent-cyan);">SIRIO v2.0</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Chat Interface -->
+        <section class="stagger-in" style="animation-delay: 0.3s;">
+          <div class="chat-container p-5 md:p-7">
+            <!-- Messages -->
+            <div id="chat-messages" class="h-72 md:h-80 overflow-y-auto mb-5 space-y-4 pr-2" style="scrollbar-width: thin;">
+              <!-- Initial message from Sirio -->
+              <div class="message-bubble message-sirio">
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent-blue), #0099cc);">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-sm mb-1" style="color: var(--accent-blue);">SIRIO</p>
+                    <p>Ciao! Sono Sirio, la tua guida all'ITI. Sono qui per aiutarti a scoprire il mondo dell'Informatica e delle Telecomunicazioni. Vuoi fare un quiz di orientamento o hai domande sulle materie?</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="typing-indicator" class="hidden mb-4">
+              <div class="message-bubble message-sirio typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex flex-wrap gap-2 mb-5">
+              <button class="quick-action" data-action="quiz">Fai il Quiz</button>
+              <button class="quick-action" data-action="materie">Quali materie?</button>
+              <button class="quick-action" data-action="lavoro">Sbocchi lavorativi</button>
+              <button class="quick-action" data-action="lab">Dove sono i laboratori?</button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="flex gap-3">
+              <button id="voice-btn" class="voice-btn flex-shrink-0" aria-label="Attiva voce">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+              </button>
+              <input type="text" id="chat-input" class="chat-input" placeholder="Scrivi la tua domanda a Sirio..." aria-label="Scrivi messaggio">
+              <button id="send-btn" class="btn-primary flex-shrink-0">Invia</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Subject Cards -->
+        <section class="stagger-in mt-10" style="animation-delay: 0.4s;">
+          <div class="section-title">
+            <h3 class="font-orbitron text-xl" style="color: var(--accent-gold);">Materie del Triennio</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="subject-cards">
+          </div>
+        </section>
+
+        <!-- Career Paths -->
+        <section class="stagger-in mt-10" style="animation-delay: 0.5s;">
+          <div class="section-title">
+            <h3 class="font-orbitron text-xl" style="color: var(--accent-blue);">Sbocchi Lavorativi</h3>
+          </div>
+          <div class="flex flex-wrap gap-3" id="career-tags">
+          </div>
+        </section>
+
+        <!-- Quiz Modal -->
+        <div id="quiz-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+          <div class="chat-container max-w-lg w-full p-7 relative">
+            <button id="close-quiz" class="absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center transition-colors" style="background: rgba(255, 255, 255, 0.08);" aria-label="Chiudi quiz">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            <h3 class="font-orbitron text-xl mb-3" style="color: var(--accent-blue);">Quiz di Orientamento</h3>
+            <p id="quiz-question" class="mb-6 text-lg" style="color: var(--text-muted);"></p>
+            <div id="quiz-options" class="space-y-3">
+            </div>
+            <div id="quiz-result" class="hidden mt-6 p-5 rounded-xl" style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.25);">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // ============ DATA ============
+    const subjects = [
+      {
+        name: 'Informatica',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>',
+        color: '#00d4ff',
+        description: 'Imparerai a programmare in Python, Java e creare siti web completi con HTML, CSS e JavaScript.',
+        skills: ['Python', 'Java', 'HTML/CSS/JS', 'Database']
+      },
+      {
+        name: 'Sistemi e Reti',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>',
+        color: '#ffd700',
+        description: 'Configurare reti, gestire server Linux e proteggere i sistemi dai cyber attacchi.',
+        skills: ['Networking', 'Cybersecurity', 'Linux', 'Cisco']
+      },
+      {
+        name: 'Gestione Progetto',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>',
+        color: '#00ff88',
+        description: 'Organizzare progetti complessi, lavorare in team e documentare il lavoro svolto.',
+        skills: ['Agile', 'Teamwork', 'Git', 'Documentazione']
+      },
+      {
+        name: 'TPSI',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>',
+        color: '#ff6b9d',
+        description: 'Progettare sistemi informatici completi integrando hardware, software e reti.',
+        skills: ['System Design', 'Architettura', 'UML', 'Integrazione']
+      },
+      {
+        name: 'Telecomunicazioni',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>',
+        color: '#ff9500',
+        description: 'Capire come viaggiano i dati su Internet, WiFi, fibra ottica e reti 5G.',
+        skills: ['Segnali', 'Fibra Ottica', '5G', 'Antenne']
+      }
+    ];
+
+    const careers = [
+      { name: 'Sviluppatore Software', color: '#00d4ff' },
+      { name: 'Web Designer', color: '#ff6b9d' },
+      { name: 'Sistemista', color: '#ffd700' },
+      { name: 'Ethical Hacker', color: '#00ff88' },
+      { name: 'Progettista Sistemi', color: '#ff9500' },
+      { name: 'Tecnico Reti', color: '#a855f7' },
+      { name: 'Cloud Architect', color: '#00fff7' },
+      { name: 'DevOps Engineer', color: '#ff4757' }
+    ];
+
+    const quizData = [
+      {
+        question: "Cosa ti piace di più fare nel tempo libero?",
+        options: [
+          { text: "Giocare ai videogiochi e scoprire come funzionano", result: "informatica" },
+          { text: "Smontare e riparare oggetti elettronici", result: "sistemi" },
+          { text: "Organizzare eventi o progetti con gli amici", result: "gestione" },
+          { text: "Smanettare con il WiFi e i router di casa", result: "telecom" }
+        ]
+      },
+      {
+        question: "Quale problema ti piacerebbe risolvere?",
+        options: [
+          { text: "Creare un'app che cambi la vita alle persone", result: "informatica" },
+          { text: "Proteggere i dati personali dagli hacker", result: "sistemi" },
+          { text: "Coordinare un team per un grande progetto innovativo", result: "gestione" },
+          { text: "Portare Internet veloce in ogni angolo del mondo", result: "telecom" }
+        ]
+      },
+      {
+        question: "Quale strumento useresti volentieri ogni giorno?",
+        options: [
+          { text: "Un IDE per scrivere codice e creare software", result: "informatica" },
+          { text: "Un server Linux da configurare e proteggere", result: "sistemi" },
+          { text: "Un software di project management e collaborazioni", result: "gestione" },
+          { text: "Un analizzatore di segnali e frequenze", result: "telecom" }
+        ]
+      }
+    ];
+
+    const responses = {
+      quiz: "Ottima scelta! Avvio il quiz di orientamento per scoprire insieme quale materia fa davvero per te...",
+      materie: "Ecco le materie principali del triennio ITI: Informatica (programmazione), Sistemi e Reti (networking e sicurezza), TPSI (progettazione sistemi), Telecomunicazioni (trasmissione dati) e Gestione Progetto. Ogni materia ti darà competenze uniche e molto richieste nel mondo del lavoro!",
+      lavoro: "Con un diploma all'ITI potrai diventare: Sviluppatore Software, Web Designer, Sistemista, Ethical Hacker, Progettista di Sistemi Informatici, Tecnico Reti e molto altro! Il settore tech è in continua espansione e cerca giovani talenti come te.",
+      lab: "I laboratori dell'ITI si trovano al Piano 1, Padiglione B. Abbiamo 3 laboratori informatici con 25 PC ciascuno, un laboratorio di reti con attrezzature Cisco professionali, e un laboratorio di telecomunicazioni. Vuoi che ti mostri la planimetria interattiva?",
+      default: "Interessante domanda! Posso aiutarti con informazioni sulle materie, i laboratori, gli sbocchi lavorativi, oppure puoi fare il quiz di orientamento. Cosa vorresti sapere?"
+    };
+
+    // ============ THREE.JS AVATAR ============
+    let scene = null;
+    let camera = null;
+    let renderer = null;
+    let particles = null;
+    let rings = [];
+    let core = null;
+    let time = 0;
+    const canvas = document.getElementById('avatar-canvas');
+
+    function initThreeJS() {
+      scene = new THREE.Scene();
+      
+      const container = canvas.parentElement;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+      camera.position.set(0, 1, 5);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ 
+        canvas, 
+        alpha: true, 
+        antialias: true 
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // Create holographic particles
+      const particleCount = 1500;
+      const particleGeometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      const colorPalette = [
+        [0, 0.83, 1],      // cyan
+        [1, 0.84, 0],      // gold
+        [0, 1, 0.53],      // green
+        [1, 0.42, 0.61],   // pink
+        [1, 0.58, 0]       // orange
+      ];
+
+      for (let i = 0; i < particleCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const radius = 1.5 + Math.random() * 0.8;
+
+        positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta) - 0.5;
+        positions[i * 3 + 2] = radius * Math.cos(phi);
+
+        const paletteColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        colors[i * 3] = paletteColor[0];
+        colors[i * 3 + 1] = paletteColor[1];
+        colors[i * 3 + 2] = paletteColor[2];
+      }
+
+      particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const particleMaterial = new THREE.PointsMaterial({
+        size: 0.025,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true
+      });
+
+      particles = new THREE.Points(particleGeometry, particleMaterial);
+      scene.add(particles);
+
+      // Create rings
+      const ringColors = [0x00d4ff, 0xffd700, 0x00ff88];
+      for (let i = 0; i < 3; i++) {
+        const ringGeometry = new THREE.TorusGeometry(1.2 + i * 0.25, 0.008, 16, 100);
+        const ringMaterial = new THREE.MeshBasicMaterial({
+          color: ringColors[i],
+          transparent: true,
+          opacity: 0.45 - i * 0.1,
+          blending: THREE.AdditiveBlending
+        });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI / 2 + i * 0.15;
+        ring.position.y = -0.5;
+        rings.push(ring);
+        scene.add(ring);
+      }
+
+      // Core sphere
+      const coreGeometry = new THREE.IcosahedronGeometry(0.35, 2);
+      const coreMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00d4ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.5
+      });
+      core = new THREE.Mesh(coreGeometry, coreMaterial);
+      core.position.y = -0.3;
+      scene.add(core);
+
+      // Inner glow
+      const glowGeometry = new THREE.SphereGeometry(0.55, 32, 32);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00d4ff,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending
+      });
+      const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+      glow.position.y = -0.3;
+      scene.add(glow);
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.008;
+
+      if (particles) {
+        particles.rotation.y += 0.0015;
+        particles.rotation.x = Math.sin(time * 0.5) * 0.08;
+
+        const positions = particles.geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 3) {
+          positions[i + 1] += Math.sin(time + i * 0.01) * 0.0008;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      rings.forEach((ring, i) => {
+        ring.rotation.z += 0.004 * (i + 1) * (i % 2 === 0 ? 1 : -1);
+        ring.rotation.x = Math.PI / 2 + i * 0.15 + Math.sin(time + i) * 0.08;
+      });
+
+      if (core) {
+        core.rotation.x += 0.003;
+        core.rotation.y += 0.005;
+        core.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function handleResize() {
+      if (!renderer || !camera) return;
+      const container = canvas.parentElement;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    // ============ UI RENDERING ============
+    function renderSubjectCards() {
+      const container = document.getElementById('subject-cards');
+      container.innerHTML = subjects.map((subject, i) => `
+        <div class="quiz-card stagger-in" style="animation-delay: ${0.08 * i}s;">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: ${subject.color}15;">
+              <svg class="w-5 h-5" style="color: ${subject.color};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${subject.icon}
+              </svg>
+            </div>
+            <h4 class="font-orbitron text-lg" style="color: ${subject.color};">${subject.name}</h4>
+          </div>
+          <p class="text-sm mb-4 leading-relaxed" style="color: var(--text-muted);">${subject.description}</p>
+          <div class="flex flex-wrap gap-2">
+            ${subject.skills.map(skill => `
+              <span class="text-xs px-3 py-1.5 rounded-lg font-medium" style="background: ${subject.color}12; color: ${subject.color};">${skill}</span>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCareerTags() {
+      const container = document.getElementById('career-tags');
+      container.innerHTML = careers.map((career, i) => `
+        <div class="subject-tag stagger-in" style="animation-delay: ${0.04 * i}s; background: ${career.color}10; border: 1px solid ${career.color}30;">
+          <svg class="w-4 h-4" style="color: ${career.color};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span style="color: ${career.color};">${career.name}</span>
+        </div>
+      `).join('');
+    }
+
+    // ============ CHAT SYSTEM ============
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const voiceBtn = document.getElementById('voice-btn');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    function addMessage(text, isUser = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message-bubble ${isUser ? 'message-user' : 'message-sirio'}`;
+      
+      if (isUser) {
+        messageDiv.innerHTML = `<p>${text}</p>`;
+      } else {
+        messageDiv.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent-blue), #0099cc);">
+              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="font-semibold text-sm mb-1" style="color: var(--accent-blue);">SIRIO</p>
+              <p>${text}</p>
+            </div>
+          </div>
+        `;
+      }
+      
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTyping() {
+      typingIndicator.classList.remove('hidden');
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideTyping() {
+      typingIndicator.classList.add('hidden');
+    }
+
+    function processInput(input) {
+      const lowerInput = input.toLowerCase();
+      
+      if (lowerInput.includes('quiz') || lowerInput.includes('orientamento')) {
+        return responses.quiz;
+      } else if (lowerInput.includes('materi') || lowerInput.includes('cosa si studia') || lowerInput.includes('programma')) {
+        return responses.materie;
+      } else if (lowerInput.includes('lavoro') || lowerInput.includes('sbocchi') || lowerInput.includes('carriera') || lowerInput.includes('futuro')) {
+        return responses.lavoro;
+      } else if (lowerInput.includes('lab') || lowerInput.includes('dove') || lowerInput.includes('padiglione') || lowerInput.includes('aula')) {
+        return responses.lab;
+      } else if (lowerInput.includes('videogiochi') || lowerInput.includes('game') || lowerInput.includes('giochi')) {
+        return "Fantastico! Se ti piacciono i videogiochi, amerai l'Informatica, la TPSI e le Telecomunicazioni. Qui molti studenti scoprono che creare software, progettare sistemi e capire come funzionano le reti è ancora più divertente che giocarci!";
+      } else if (lowerInput.includes('difficil') || lowerInput.includes('difficile') || lowerInput.includes('paura')) {
+        return "Assolutamente no, è stimolante! Non è solo codice sui libri: costruirai siti web reali, app funzionanti e sistemi informatici completi. Inizieremo dalle basi e ti guideremo passo passo. L'ITI è il posto perfetto per scoprire il piacere di creare con la tecnologia!";
+      } else if (lowerInput.includes('ciao') || lowerInput.includes('salve') || lowerInput.includes('buongiorno')) {
+        return "Ciao! Benvenuto all'ITI! Sono Sirio, la tua guida olografica. Sono qui per rispondere a tutte le tue domande sul nostro indirizzo Informatica e Telecomunicazioni. Vuoi sapere cosa studierai, quali laboratori abbiamo, o fare un quiz per scoprire la tua materia ideale?";
+      }
+      
+      return responses.default;
+    }
+
+    function handleSend() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      
+      addMessage(text, true);
+      chatInput.value = '';
+      
+      showTyping();
+      
+      setTimeout(() => {
+        hideTyping();
+        const response = processInput(text);
+        addMessage(response);
+        speak(response);
+        
+        if (text.toLowerCase().includes('quiz')) {
+          setTimeout(() => openQuiz(), 1200);
+        }
+      }, 800 + Math.random() * 600);
+    }
+
+    // ============ VOICE SYSTEM ============
+    let recognition = null;
+    let isListening = false;
+
+    function initVoice() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'it-IT';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          chatInput.value = transcript;
+          handleSend();
+        };
+
+        recognition.onend = () => {
+          isListening = false;
+          voiceBtn.classList.remove('listening');
+        };
+      }
+    }
+
+    function toggleVoice() {
+      if (!recognition) {
+        alert('Il riconoscimento vocale non e supportato dal tuo browser.');
+        return;
+      }
+
+      if (isListening) {
+        recognition.stop();
+        voiceBtn.classList.remove('listening');
+      } else {
+        recognition.start();
+        voiceBtn.classList.add('listening');
+      }
+      isListening = !isListening;
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'it-IT';
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        
+        const voices = speechSynthesis.getVoices();
+        const italianVoice = voices.find(v => v.lang.includes('it'));
+        if (italianVoice) utterance.voice = italianVoice;
+        
+        speechSynthesis.speak(utterance);
+      }
+    }
+
+    // ============ QUIZ SYSTEM ============
+    const quizModal = document.getElementById('quiz-modal');
+    const quizQuestion = document.getElementById('quiz-question');
+    const quizOptions = document.getElementById('quiz-options');
+    const quizResult = document.getElementById('quiz-result');
+    const closeQuizBtn = document.getElementById('close-quiz');
+
+    let currentQuizIndex = 0;
+    let quizScores = { informatica: 0, sistemi: 0, gestione: 0, telecom: 0 };
+
+    function openQuiz() {
+      quizModal.classList.remove('hidden');
+      quizModal.classList.add('flex');
+      currentQuizIndex = 0;
+      quizScores = { informatica: 0, sistemi: 0, gestione: 0, telecom: 0 };
+      quizResult.classList.add('hidden');
+      renderQuizQuestion();
+    }
+
+    function closeQuiz() {
+      quizModal.classList.add('hidden');
+      quizModal.classList.remove('flex');
+    }
+
+    function renderQuizQuestion() {
+      if (currentQuizIndex >= quizData.length) {
+        showQuizResult();
+        return;
+      }
+
+      const q = quizData[currentQuizIndex];
+      quizQuestion.textContent = `Domanda ${currentQuizIndex + 1}/${quizData.length}: ${q.question}`;
+      
+      quizOptions.innerHTML = q.options.map((opt, i) => `
+        <button class="quiz-card w-full text-left stagger-in" data-result="${opt.result}" style="animation-delay: ${0.08 * i}s;">
+          <span class="font-semibold" style="color: var(--accent-blue);">${String.fromCharCode(65 + i)}.</span>
+          <span class="ml-2">${opt.text}</span>
+        </button>
+      `).join('');
+
+      quizOptions.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          quizScores[btn.dataset.result]++;
+          currentQuizIndex++;
+          renderQuizQuestion();
+        });
+      });
+    }
+
+    function showQuizResult() {
+      const max = Math.max(...Object.values(quizScores));
+      const result = Object.keys(quizScores).find(k => quizScores[k] === max);
+      
+      const resultText = {
+        informatica: {
+          title: 'Informatica e TPSI',
+          desc: 'Sei portato per la programmazione e la creazione di software! Le materie Informatica e TPSI saranno il tuo campo ideale. Diventerai un mago del codice!',
+          subjects: ['Informatica', 'TPSI', 'Sistemi e Reti']
+        },
+        sistemi: {
+          title: 'Sistemi e Reti',
+          desc: 'Ti affascina il mondo del networking, della sicurezza informatica e dell\'amministrazione di sistemi! Sistemi e Reti è la materia perfetta per te.',
+          subjects: ['Sistemi e Reti', 'TPSI', 'Telecomunicazioni']
+        },
+        gestione: {
+          title: 'Gestione Progetto',
+          desc: 'Hai spirito di leader e ti piace organizzare e coordinare! Gestione Progetto valorizzerà le tue capacità e ti preparerà a ruoli di responsabilità.',
+          subjects: ['Gestione Progetto', 'TPSI', 'Informatica']
+        },
+        telecom: {
+          title: 'Telecomunicazioni',
+          desc: 'Il mondo delle comunicazioni ti affascina! Telecomunicazioni e Sistemi saranno i tuoi punti di forza. Potrai lavorare sulle tecnologie del futuro!',
+          subjects: ['Telecomunicazioni', 'Sistemi e Reti', 'TPSI']
+        }
+      };
+
+      const r = resultText[result];
+      quizOptions.innerHTML = '';
+      quizQuestion.textContent = 'Ecco il tuo risultato!';
+      quizResult.classList.remove('hidden');
+      quizResult.innerHTML = `
+        <h4 class="font-orbitron text-xl mb-3" style="color: var(--accent-gold);">${r.title}</h4>
+        <p class="mb-4 leading-relaxed">${r.desc}</p>
+        <div class="flex flex-wrap gap-2">
+          ${r.subjects.map(s => `<span class="text-xs px-3 py-1.5 rounded-lg font-medium" style="background: rgba(0, 212, 255, 0.15); color: var(--accent-cyan);">${s}</span>`).join('')}
+        </div>
+      `;
+
+      addMessage(`Perfetto! Il quiz suggerisce che "${r.title}" sia l'indirizzo ideale per te! ${r.desc}`);
+      speak(`Fantastico! Il quiz indica che ${r.title} sia perfetto per te. ${r.desc}`);
+    }
+
+    // ============ EVENT LISTENERS ============
+    function init() {
+      initThreeJS();
+      renderSubjectCards();
+      renderCareerTags();
+      initVoice();
+
+      window.addEventListener('resize', handleResize);
+      
+      sendBtn.addEventListener('click', handleSend);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+      });
+
+      voiceBtn.addEventListener('click', toggleVoice);
+
+      document.querySelectorAll('.quick-action').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.dataset.action;
+          chatInput.value = action === 'quiz' ? 'Voglio fare il quiz di orientamento' : 
+                           action === 'materie' ? 'Quali materie si studiano?' :
+                           action === 'lavoro' ? 'Quali sono gli sbocchi lavorativi?' :
+                           'Dove si trovano i laboratori?';
+          handleSend();
+        });
+      });
+
+      closeQuizBtn.addEventListener('click', closeQuiz);
+      quizModal.addEventListener('click', (e) => {
+        if (e.target === quizModal) closeQuiz();
+      });
+
+      document.getElementById('tourBtn').addEventListener('click', () => {
+        const tourText = 'Attivando il Tour Virtuale... Il nostro ITI ha 3 piani. Al Piano Terra trovi la segreteria e l\'aula magna. Al Piano 1, Padiglione B, ci sono i laboratori informatici e di reti. Al Piano 2 le aule delle classi del triennio. Vuoi che ti mostri qualche ambiente specifico?';
+        addMessage(tourText);
+        speak('Benvenuto nel tour virtuale dell\'ITI! Ti guiderò attraverso il nostro istituto tecnologico.');
+      });
+
+      // Card hover effect
+      document.addEventListener('mousemove', (e) => {
+        const cards = document.querySelectorAll('.quiz-card');
+        cards.forEach(card => {
+          const rect = card.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          card.style.setProperty('--mouse-x', `${x}%`);
+          card.style.setProperty('--mouse-y', `${y}%`);
+        });
+      });
+
+      // Load voices for speech synthesis
+      if ('speechSynthesis' in window) {
+        speechSynthesis.getVoices();
+      }
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>
